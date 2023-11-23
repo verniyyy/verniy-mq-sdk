@@ -1,0 +1,1 @@
+# verniy-mq-sdk
