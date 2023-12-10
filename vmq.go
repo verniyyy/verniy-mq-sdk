@@ -4,59 +4,21 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 	"io"
-	"net"
+	"log"
 )
 
-// Session ...
-type Session interface {
-	Close() error
-	request(qName string, cmd uint8, msg any) (io.Reader, error)
-}
-
-// Options ...
-type Options struct {
-	Addr     string
-	UserID   string
-	Password string
-}
-
-// NewSession ...
-func NewSession(opt *Options) (Session, error) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", opt.Addr)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	return &session{
-		conn: conn,
-	}, nil
-}
-
 const (
-	ping = iota
+	_ = iota
+	quit
+	ping
 	createQueue
+	listQueue
 	deleteQueue
 	publish
 	consume
 	delete
 )
-
-// session ...
-type session struct {
-	conn *net.TCPConn
-}
-
-// Close ...
-func (s session) Close() error {
-	return s.conn.Close()
-}
 
 // Ping ...
 func Ping(s Session) error {
@@ -64,16 +26,43 @@ func Ping(s Session) error {
 	if err != nil {
 		return err
 	}
-
-	res, err := io.ReadAll(r)
-	if err != nil {
+	buf := make([]byte, 64)
+	if _, err := r.Read(buf); err != nil {
+		log.Println(err)
 		return err
 	}
-	if len(res) == 0 {
-		return fmt.Errorf("ping failed")
-	}
+	log.Printf("%v\n", string(buf))
+
+	// --
 
 	return nil
+}
+
+// CreateQueue ...
+func CreateQueue(s Session, queueName string) error {
+	_, err := s.request(queueName, createQueue, nil)
+	return err
+}
+
+// ListQueue ...
+// func ListQueue(s Session, queueName string) ([]string, error) {
+// 	r, err := s.request(queueName, listQueue, nil)
+// 	if err != nil {
+// 		return []string{}, err
+// 	}
+
+// 	buf, err := io.ReadAll(r)
+// 	if err != nil {
+// 		return []string{}, err
+// 	}
+
+// 	return []string{}, err
+// }
+
+// DeleteQueue ...
+func DeleteQueue(s Session, queueName string) error {
+	_, err := s.request(queueName, deleteQueue, nil)
+	return err
 }
 
 // Publish ...
@@ -105,40 +94,11 @@ func Consume[T any](s Session, queueName string) (T, error) {
 	return v, nil
 }
 
-// request ...
-func (c session) request(qName string, cmd uint8, msg any) (io.Reader, error) {
-	hf := headerField{
-		Command: cmd,
-	}
-	copy(hf.QueueName[:], []rune(qName))
-
-	hr, err := hf.encode()
-	if err != nil {
-		return nil, err
-	}
-
-	mr, err := encode(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := io.ReadAll(io.MultiReader(hr, mr))
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := c.conn.Write(req); err != nil {
-		return nil, err
-	}
-
-	return c.conn, nil
-}
-
 // headerField ...
 type headerField struct {
-	AccountID [32]rune
-	QueueName [128]rune
+	SessionID SessionID
 	Command   uint8
+	QueueName [128]rune
 }
 
 // encode ...
