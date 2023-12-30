@@ -70,7 +70,7 @@ func DeleteQueue(s Session, queueName string) error {
 }
 
 // Publish ...
-func Publish(s Session, queueName string, msg any) error {
+func Publish[T any](s Session, queueName string, msg T) error {
 	_, err := s.request(queueName, publish, msg)
 	return err
 }

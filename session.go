@@ -13,18 +13,25 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// Session ...
-type Session interface {
-	ID() string
-	Close() error
-	request(qName string, cmd uint8, msg any) (*response, error)
-}
-
 // Options ...
 type Options struct {
 	Addr     string
 	UserID   string
 	Password string
+}
+
+// Session ...
+type Session interface {
+	ID() string
+	Close() error
+	Ping() error
+	CreateQueue(queueName string) error
+	ListQueue() ([]string, error)
+	DeleteQueue(queueName string) error
+	Consume(queueName string) (any, error)
+	Delete(queueName string, messageID MessageID) error
+	Publish(queueName string, msg any) error
+	request(qName string, cmd uint8, msg any) (*response, error)
 }
 
 // NewSession ...
@@ -87,6 +94,41 @@ func (s session) ID() string {
 // Close ...
 func (s session) Close() error {
 	return s.conn.Close()
+}
+
+// Ping ...
+func (s session) Ping() error {
+	return Ping(s)
+}
+
+// CreateQueue ...
+func (s session) CreateQueue(queueName string) error {
+	return CreateQueue(s, queueName)
+}
+
+// ListQueue ...
+func (s session) ListQueue() ([]string, error) {
+	return ListQueue(s)
+}
+
+// DeleteQueue ...
+func (s session) DeleteQueue(queueName string) error {
+	return DeleteQueue(s, queueName)
+}
+
+// Consume ...
+func (s session) Consume(queueName string) (any, error) {
+	return Consume[any](s, queueName)
+}
+
+// Delete ...
+func (s session) Delete(queueName string, messageID MessageID) error {
+	return Delete(s, queueName, messageID)
+}
+
+// Publish
+func (s session) Publish(queueName string, msg any) error {
+	return Publish(s, queueName, msg)
 }
 
 // request ...
