@@ -44,19 +44,24 @@ func CreateQueue(s Session, queueName string) error {
 }
 
 // ListQueue ...
-// func ListQueue(s Session, queueName string) ([]string, error) {
-// 	r, err := s.request(queueName, listQueue, nil)
-// 	if err != nil {
-// 		return []string{}, err
-// 	}
+func ListQueue(s Session) ([]string, error) {
+	r, err := s.request("", listQueue, nil)
+	if err != nil {
+		return []string{}, err
+	}
 
-// 	buf, err := io.ReadAll(r)
-// 	if err != nil {
-// 		return []string{}, err
-// 	}
+	buf := make([]byte, r.header.DataSize)
+	if _, err := r.Read(buf); err != nil {
+		return []string{}, err
+	}
 
-// 	return []string{}, err
-// }
+	type ListQueuesOutput struct {
+		Queues []string `json:"queues"`
+	}
+	data, err := decodeJSON[ListQueuesOutput](buf)
+
+	return data.Queues, err
+}
 
 // DeleteQueue ...
 func DeleteQueue(s Session, queueName string) error {
