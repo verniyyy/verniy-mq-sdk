@@ -95,6 +95,12 @@ func Consume[T any](s Session, queueName string) (Message[T], error) {
 	return Message[T]{ID: messageID, Data: data}, nil
 }
 
+// Delete ...
+func Delete(s Session, queueName string, messageID MessageID) error {
+	_, err := s.request(queueName, delete, messageID[:])
+	return err
+}
+
 // MessageID ...
 type MessageID [26]byte
 
