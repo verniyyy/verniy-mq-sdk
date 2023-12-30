@@ -13,7 +13,7 @@ type User struct {
 }
 
 func ExampleSession() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		return
 	}
@@ -28,7 +28,7 @@ func ExampleSession() {
 }
 
 func ExamplePing() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return
@@ -49,7 +49,7 @@ func ExamplePing() {
 
 // ExampleCreateQueue ...
 func ExampleCreateQueue() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return
@@ -70,7 +70,7 @@ func ExampleCreateQueue() {
 
 // ExampleListQueue ...
 func ExampleListQueue() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return
@@ -106,7 +106,7 @@ func ExampleListQueue() {
 
 // ExampleDeleteQueue ...
 func ExampleDeleteQueue() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return
@@ -127,7 +127,7 @@ func ExampleDeleteQueue() {
 
 // ExamplePublish ...
 func ExamplePublish() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return
@@ -150,7 +150,7 @@ func ExamplePublish() {
 
 // ExampleConsume ...
 func ExampleConsume() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return
@@ -174,7 +174,7 @@ func ExampleConsume() {
 
 // ExampleDelete ...
 func ExampleDelete() {
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		log.Println(err)
 		return

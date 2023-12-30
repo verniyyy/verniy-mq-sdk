@@ -13,8 +13,8 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// Options ...
-type Options struct {
+// Config ...
+type Config struct {
 	Addr     string
 	UserID   string
 	Password string
@@ -35,8 +35,8 @@ type Session interface {
 }
 
 // NewSession ...
-func NewSession(opt *Options) (Session, error) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", opt.Addr)
+func NewSession(cfg *Config) (Session, error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", cfg.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +50,8 @@ func NewSession(opt *Options) (Session, error) {
 		conn: c,
 	}
 	af := authField{}
-	copy(af.AccountID[:], []rune(opt.UserID))
-	copy(af.Password[:], []rune(opt.Password))
+	copy(af.AccountID[:], []rune(cfg.UserID))
+	copy(af.Password[:], []rune(cfg.Password))
 
 	ab, err := af.encode()
 	if err != nil {

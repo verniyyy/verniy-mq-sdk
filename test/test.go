@@ -13,7 +13,7 @@ func TestMQ(t *testing.T) {
 		Name string
 	}
 
-	sess, err := vmq.NewSession(SessionOptionsExample)
+	sess, err := vmq.NewSession(SessionConfigExample)
 	if err != nil {
 		t.Fatal(err)
 	}
