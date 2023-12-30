@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -151,37 +150,6 @@ func read[T any](r io.Reader, bufSize uint64) (T, error) {
 	}
 
 	return v, nil
-}
-
-// readAll ...
-func readAll(r io.Reader) ([]byte, error) {
-	// make a temporary bytes var to read from the connection
-	tmp := make([]byte, 1024)
-	// make 0 length data bytes (since we'll be appending)
-	data := make([]byte, 0)
-	// keep track of full length read
-	length := 0
-
-	// loop through the connection stream, appending tmp to data
-	for {
-		// read to the tmp var
-		n, err := r.Read(tmp)
-		if err != nil {
-			// log if not normal error
-			if err != io.EOF {
-				fmt.Printf("Read error - %s\n", err)
-			}
-			break
-		}
-
-		// append read data to full data
-		data = append(data, tmp[:n]...)
-
-		// update total read var
-		length += n
-	}
-
-	return data, nil
 }
 
 // authField ...
