@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
-	"io"
+	"encoding/json"
 	"log"
 )
 
@@ -31,7 +31,6 @@ func Ping(s Session) error {
 		log.Println(err)
 		return err
 	}
-	log.Printf("%v\n", string(buf))
 
 	// --
 
@@ -72,26 +71,42 @@ func Publish(s Session, queueName string, msg any) error {
 }
 
 // Consume ...
-func Consume[T any](s Session, queueName string) (T, error) {
+func Consume[T any](s Session, queueName string) (Message[T], error) {
 	r, err := s.request(queueName, consume, nil)
 	if err != nil {
-		var v T
-		return v, err
+		return Message[T]{}, err
 	}
 
-	buf, err := io.ReadAll(r)
+	var messageID MessageID
+	if _, err := r.Read(messageID[:]); err != nil {
+		return Message[T]{}, err
+	}
+
+	buf := make([]byte, r.header.DataSize)
+	if _, err := r.Read(buf); err != nil {
+		return Message[T]{}, err
+	}
+
+	data, err := decodeGob[T](buf)
 	if err != nil {
-		var v T
-		return v, err
+		return Message[T]{}, err
 	}
 
-	var v T
-	if err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &v); err != nil {
-		var v T
-		return v, err
-	}
+	return Message[T]{ID: messageID, Data: data}, nil
+}
 
-	return v, nil
+// MessageID ...
+type MessageID [26]byte
+
+// String ...
+func (m MessageID) String() string {
+	return string(m[:])
+}
+
+// Message ...
+type Message[T any] struct {
+	ID   MessageID
+	Data T
 }
 
 // headerField ...
@@ -99,30 +114,58 @@ type headerField struct {
 	SessionID SessionID
 	Command   uint8
 	QueueName [128]rune
+	DataSize  uint64
 }
 
 // encode ...
-func (hf headerField) encode() (io.Reader, error) {
+func (hf headerField) encode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	binary.Write(
 		buf,
 		binary.BigEndian,
 		hf,
 	)
-	return buf, nil
+	return buf.Bytes(), nil
 }
 
 // encode ...
-func encode(data any) (io.Reader, error) {
+func encode(data any) ([]byte, error) {
+	switch typedData := data.(type) {
+	case []byte:
+		return typedData, nil
+	}
+
 	buf := new(bytes.Buffer)
 	if data == nil {
-		return buf, nil
+		return []byte{}, nil
 	}
 
 	enc := gob.NewEncoder(buf)
 	if err := enc.Encode(data); err != nil {
-		return nil, err
+		return []byte{}, err
 	}
 
-	return buf, nil
+	return buf.Bytes(), nil
+}
+
+func decodeGob[T any](data []byte) (T, error) {
+	buf := bytes.NewBuffer(data)
+
+	var v T
+	if err := gob.NewDecoder(buf).Decode(&v); err != nil {
+		return *new(T), err
+	}
+
+	return v, nil
+}
+
+func decodeJSON[T any](data []byte) (T, error) {
+	buf := bytes.NewBuffer(data)
+
+	var v T
+	if err := json.NewDecoder(buf).Decode(&v); err != nil {
+		return *new(T), err
+	}
+
+	return v, nil
 }

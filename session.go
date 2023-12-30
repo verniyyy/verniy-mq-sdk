@@ -18,7 +18,7 @@ import (
 type Session interface {
 	ID() string
 	Close() error
-	request(qName string, cmd uint8, msg any) (io.Reader, error)
+	request(qName string, cmd uint8, msg any) (*response, error)
 }
 
 // Options ...
@@ -91,7 +91,7 @@ func (s session) Close() error {
 }
 
 // request ...
-func (c session) request(qName string, cmd uint8, msg any) (io.Reader, error) {
+func (c session) request(qName string, cmd uint8, data any) (*response, error) {
 	r := bufio.NewReader(c.conn)
 	w := bufio.NewWriter(c.conn)
 
@@ -101,21 +101,18 @@ func (c session) request(qName string, cmd uint8, msg any) (io.Reader, error) {
 	}
 	copy(hf.QueueName[:], []rune(qName))
 
+	mr, err := encode(data)
+	if err != nil {
+		return nil, err
+	}
+
+	hf.DataSize = uint64(len(mr))
 	hr, err := hf.encode()
 	if err != nil {
 		return nil, err
 	}
 
-	mr, err := encode(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := io.ReadAll(io.MultiReader(hr, mr))
-	if err != nil {
-		return nil, err
-	}
-
+	req := append(hr, mr...)
 	if _, err := w.Write(req); err != nil {
 		return nil, err
 	}
@@ -127,16 +124,20 @@ func (c session) request(qName string, cmd uint8, msg any) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("resHeaderField.Result: %v\n", resHeaderField.Result)
+	log.Printf("resHeaderField: %+v\n", resHeaderField)
 	if resHeaderField.Result != ResOK {
-		return nil, errors.New("response error")
+		errBuf := make([]byte, resHeaderField.DataSize)
+		if _, err := r.Read(errBuf); err != nil {
+			return nil, err
+		}
+		return nil, errors.New(string(errBuf))
 	}
 
-	return r, nil
+	return &response{header: resHeaderField, Reader: r}, nil
 }
 
 // read ...
-func read[T any](r io.Reader, bufSize int) (T, error) {
+func read[T any](r io.Reader, bufSize uint64) (T, error) {
 	var v T
 	buf := make([]byte, bufSize)
 	received, err := r.Read(buf)
@@ -206,10 +207,16 @@ const (
 	ResError
 )
 
-const resHeaderFieldSize = 1 + 4
+const resHeaderFieldSize = 1 + 8
 
 // resHeaderField ...
 type resHeaderField struct {
 	Result   uint8
-	DataSize uint32
+	DataSize uint64
+}
+
+// response
+type response struct {
+	header resHeaderField
+	io.Reader
 }
