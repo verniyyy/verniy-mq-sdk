@@ -159,13 +159,10 @@ func (c session) request(qName string, cmd uint8, data any) (*response, error) {
 	}
 	w.Flush()
 
-	log.Println("requested message")
-
 	resHeaderField, err := read[resHeaderField](r, resHeaderFieldSize)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("resHeaderField: %+v\n", resHeaderField)
 	if resHeaderField.Result != ResOK {
 		errBuf := make([]byte, resHeaderField.DataSize)
 		if _, err := r.Read(errBuf); err != nil {
@@ -181,13 +178,12 @@ func (c session) request(qName string, cmd uint8, data any) (*response, error) {
 func read[T any](r io.Reader, bufSize uint64) (T, error) {
 	var v T
 	buf := make([]byte, bufSize)
-	received, err := r.Read(buf)
+	_, err := r.Read(buf)
 	if err != nil {
 		return v, err
 	}
 
 	if err := binary.Read(bytes.NewReader(buf), binary.BigEndian, &v); err != nil {
-		log.Printf("received: %v\n", received)
 		return v, err
 	}
 

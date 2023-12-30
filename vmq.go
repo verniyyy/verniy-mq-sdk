@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
-	"log"
 )
 
 const (
@@ -28,7 +27,6 @@ func Ping(s Session) error {
 	}
 	buf := make([]byte, 64)
 	if _, err := r.Read(buf); err != nil {
-		log.Println(err)
 		return err
 	}
 
