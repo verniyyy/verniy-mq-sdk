@@ -28,7 +28,7 @@ type Session interface {
 	CreateQueue(queueName string) error
 	ListQueue() ([]string, error)
 	DeleteQueue(queueName string) error
-	Consume(queueName string) (any, error)
+	Consume(queueName string) (Message[any], error)
 	Delete(queueName string, messageID MessageID) error
 	Publish(queueName string, msg any) error
 	request(qName string, cmd uint8, msg any) (*response, error)
@@ -117,7 +117,7 @@ func (s session) DeleteQueue(queueName string) error {
 }
 
 // Consume ...
-func (s session) Consume(queueName string) (any, error) {
+func (s session) Consume(queueName string) (Message[any], error) {
 	return Consume[any](s, queueName)
 }
 
